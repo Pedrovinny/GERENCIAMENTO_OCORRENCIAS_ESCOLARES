@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Entrar · Ocorrências Escolares{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-center" style="min-height: 100vh; background: #f4f6f9;">
+    <div class="card shadow-lg" style="width: 100%; max-width: 400px;">
+        <div class="card-body p-4">
+            <div class="text-center mb-4">
+                <img src="{% static 'ifam_humaita_logo_inicio.png' %}" alt="IFAM" style="max-width: 140px;" class="mb-3">
+                <h4 class="mb-0">Ocorrências Escolares</h4>
+                <p class="text-secondary small mb-0">IFAM Campus Humaitá</p>
+            </div>
+
+            {% if form.errors %}
+            <div class="alert alert-danger py-2">
+                Usuário ou senha inválidos.
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label">Usuário</label>
+                    <input type="text" name="username" class="form-control" autofocus required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Senha</label>
+                    <input type="password" name="password" class="form-control" required>
+                </div>
+
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-box-arrow-in-right"></i> Entrar
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

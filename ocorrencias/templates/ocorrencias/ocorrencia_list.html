@@ -1,0 +1,48 @@
+{% extends 'ocorrencias/base_app.html' %}
+{% load ocorrencias_extras %}
+
+{% block titulo_pagina %}Ocorrências{% endblock %}
+{% block cabecalho_pagina %}<i class="bi bi-journal-text"></i> Ocorrências{% endblock %}
+
+{% block conteudo_pagina %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="Pesquisar por aluno, matrícula ou professor..." value="{{ termo_busca }}" style="min-width: 320px;">
+            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i></button>
+        </form>
+        <a href="{% url 'ocorrencias:ocorrencia_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> Registrar Ocorrência</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr><th>Data</th><th>Aluno</th><th>Turma</th><th>Professor</th><th>Tipo</th><th>Status</th><th class="text-end">Ações</th></tr>
+            </thead>
+            <tbody>
+                {% for o in objetos %}
+                <tr>
+                    <td>{{ o.data|date:"d/m/Y" }} <span class="text-secondary small">{{ o.hora|time:"H:i" }}</span></td>
+                    <td>{{ o.aluno.nome }}</td>
+                    <td>{{ o.aluno.turma.nome }}</td>
+                    <td>{{ o.professor.nome }}</td>
+                    <td><span class="badge bg-{{ o.cor_nivel }}">{{ o.tipo.descricao }}</span></td>
+                    <td><span class="badge bg-{{ o.cor_status }}">{{ o.get_status_display }}</span></td>
+                    <td class="text-end">
+                        <a href="{% url 'ocorrencias:ocorrencia_detail' o.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                        <a href="{% url 'ocorrencias:ocorrencia_update' o.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        {% if user.is_superuser or user|in_group:"Administrador" %}
+                        <a href="{% url 'ocorrencias:ocorrencia_delete' o.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-secondary py-4">Nenhuma ocorrência encontrada.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body">
+        {% include 'ocorrencias/cadastros/_paginacao.html' %}
+    </div>
+</div>
+{% endblock %}

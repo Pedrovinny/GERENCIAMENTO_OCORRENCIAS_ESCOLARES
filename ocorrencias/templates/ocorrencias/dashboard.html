@@ -1,0 +1,176 @@
+{% extends 'ocorrencias/base_app.html' %}
+
+{% block titulo_pagina %}Dashboard{% endblock %}
+{% block cabecalho_pagina %}<i class="bi bi-speedometer2"></i> Dashboard{% endblock %}
+
+{% block conteudo_pagina %}
+
+<div class="row g-3 mb-2">
+    <div class="col-6 col-lg-3">
+        <div class="card card-indicador shadow-sm border-0 border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="text-secondary small">Total de Ocorrências</div>
+                <div class="display-6">{{ total_ocorrencias }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-indicador shadow-sm border-0 border-start border-4 border-info">
+            <div class="card-body">
+                <div class="text-secondary small">Registradas Hoje</div>
+                <div class="display-6">{{ ocorrencias_hoje }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-indicador shadow-sm border-0 border-start border-4 border-danger">
+            <div class="card-body">
+                <div class="text-secondary small">Ocorrências Graves</div>
+                <div class="display-6">{{ ocorrencias_graves }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-indicador shadow-sm border-0 border-start border-4 border-warning">
+            <div class="card-body">
+                <div class="text-secondary small">Ocorrências Médias</div>
+                <div class="display-6">{{ ocorrencias_medias }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-indicador shadow-sm border-0 border-start border-4 border-secondary">
+            <div class="card-body">
+                <div class="text-secondary small">Ocorrências Leves</div>
+                <div class="display-6">{{ ocorrencias_leves }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-indicador shadow-sm border-0 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="text-secondary small">Professores Cadastrados</div>
+                <div class="display-6">{{ total_professores }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-indicador shadow-sm border-0 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="text-secondary small">Alunos Cadastrados</div>
+                <div class="display-6">{{ total_alunos }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card card-indicador shadow-sm border-0 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="text-secondary small">Cursos Cadastrados</div>
+                <div class="display-6">{{ total_cursos }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3 d-flex">
+        <a href="{% url 'ocorrencias:ocorrencia_create' %}" class="card card-indicador shadow-sm border-0 bg-primary text-white text-decoration-none w-100">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
+                <i class="bi bi-plus-circle fs-1 mb-1"></i>
+                <div class="fw-semibold">Registrar Ocorrência</div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white"><i class="bi bi-graph-up"></i> Ocorrências por Mês</div>
+            <div class="card-body"><canvas id="graficoMes" height="220"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white"><i class="bi bi-pie-chart"></i> Ocorrências por Tipo</div>
+            <div class="card-body"><canvas id="graficoTipo" height="220"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white"><i class="bi bi-book"></i> Ocorrências por Curso</div>
+            <div class="card-body"><canvas id="graficoCurso" height="220"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white"><i class="bi bi-person-workspace"></i> Ocorrências por Professor</div>
+            <div class="card-body"><canvas id="graficoProfessor" height="220"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white"><i class="bi bi-people"></i> Ocorrências por Turma</div>
+            <div class="card-body"><canvas id="graficoTurma" height="220"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mt-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history"></i> Últimas Ocorrências</span>
+        <a href="{% url 'ocorrencias:ocorrencia_list' %}" class="btn btn-sm btn-outline-primary">Ver todas</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Data</th><th>Aluno</th><th>Professor</th><th>Tipo</th><th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in ultimas_ocorrencias %}
+                <tr style="cursor:pointer" onclick="window.location='{% url 'ocorrencias:ocorrencia_detail' o.pk %}'">
+                    <td>{{ o.data|date:"d/m/Y" }} {{ o.hora|time:"H:i" }}</td>
+                    <td>{{ o.aluno.nome }}</td>
+                    <td>{{ o.professor.nome }}</td>
+                    <td><span class="badge bg-{{ o.cor_nivel }}">{{ o.tipo.descricao }}</span></td>
+                    <td><span class="badge bg-{{ o.cor_status }}">{{ o.get_status_display }}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-secondary py-4">Nenhuma ocorrência registrada ainda.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+const corPaleta = ["#0d6efd","#198754","#ffc107","#dc3545","#0dcaf0","#6f42c1","#fd7e14","#20c997","#6c757d","#d63384"];
+
+function criarGrafico(id, tipo, labels, valores, opcoes={}) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    new Chart(ctx, {
+        type: tipo,
+        data: {
+            labels: labels,
+            datasets: [{
+                data: valores,
+                backgroundColor: corPaleta,
+                borderRadius: tipo === 'bar' ? 6 : 0,
+            }]
+        },
+        options: Object.assign({
+            responsive: true,
+            plugins: { legend: { display: tipo !== 'bar' } }
+        }, opcoes)
+    });
+}
+
+criarGrafico('graficoMes', 'line', {{ grafico_mes_labels|safe }}, {{ grafico_mes_valores|safe }});
+criarGrafico('graficoTipo', 'doughnut', {{ grafico_tipo_labels|safe }}, {{ grafico_tipo_valores|safe }});
+criarGrafico('graficoCurso', 'bar', {{ grafico_curso_labels|safe }}, {{ grafico_curso_valores|safe }});
+criarGrafico('graficoProfessor', 'bar', {{ grafico_professor_labels|safe }}, {{ grafico_professor_valores|safe }});
+criarGrafico('graficoTurma', 'bar', {{ grafico_turma_labels|safe }}, {{ grafico_turma_valores|safe }});
+</script>
+
+{% endblock %}

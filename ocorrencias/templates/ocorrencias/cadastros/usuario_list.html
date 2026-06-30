@@ -1,0 +1,52 @@
+{% extends 'ocorrencias/base_app.html' %}
+
+{% block titulo_pagina %}Usuários{% endblock %}
+{% block cabecalho_pagina %}<i class="bi bi-person-gear"></i> Gerenciamento de Usuários{% endblock %}
+
+{% block conteudo_pagina %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="Pesquisar usuário..." value="{{ termo_busca }}" style="min-width: 280px;">
+            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i></button>
+        </form>
+        <a href="{% url 'ocorrencias:usuario_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> Novo Usuário</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light"><tr><th>Usuário</th><th>Nome</th><th>E-mail</th><th>SIAPE</th><th>Perfil</th><th>Situação</th><th class="text-end">Ações</th></tr></thead>
+            <tbody>
+                {% for u in objetos %}
+                <tr>
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.get_full_name|default:"—" }}</td>
+                    <td>{{ u.email|default:"—" }}</td>
+                    <td>{{ u.perfil_ocorrencias.siape|default:"—" }}</td>
+                    <td>
+                        {% if u.is_superuser %}
+                            <span class="badge bg-dark">Superusuário</span>
+                        {% else %}
+                            <span class="badge bg-{% if u.perfil_ocorrencias.perfil == 'ADMINISTRADOR' %}primary{% else %}secondary{% endif %}">
+                                {{ u.perfil_ocorrencias.get_perfil_display|default:"Usuário" }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge bg-{% if u.is_active %}success{% else %}secondary{% endif %}">{% if u.is_active %}Ativo{% else %}Inativo{% endif %}</span></td>
+                    <td class="text-end">
+                        <a href="{% url 'ocorrencias:usuario_update' u.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        {% if u != request.user %}
+                        <a href="{% url 'ocorrencias:usuario_delete' u.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-secondary py-4">Nenhum usuário cadastrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body">
+        {% include 'ocorrencias/cadastros/_paginacao.html' %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'ocorrencias/base_app.html' %}
+
+{% block titulo_pagina %}Professores{% endblock %}
+{% block cabecalho_pagina %}<i class="bi bi-person-workspace"></i> Professores{% endblock %}
+
+{% block conteudo_pagina %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="Pesquisar por nome, SIAPE ou e-mail..." value="{{ termo_busca }}" style="min-width: 280px;">
+            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i></button>
+        </form>
+        <a href="{% url 'ocorrencias:professor_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> Novo Professor</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr><th>Nome</th><th>SIAPE</th><th>E-mail</th><th>Telefone</th><th>Situação</th><th class="text-end">Ações</th></tr>
+            </thead>
+            <tbody>
+                {% for p in objetos %}
+                <tr>
+                    <td>{{ p.nome }}</td>
+                    <td>{{ p.siape }}</td>
+                    <td>{{ p.email }}</td>
+                    <td>{{ p.telefone|default:"—" }}</td>
+                    <td><span class="badge bg-{% if p.ativo %}success{% else %}secondary{% endif %}">{% if p.ativo %}Ativo{% else %}Inativo{% endif %}</span></td>
+                    <td class="text-end">
+                        <a href="{% url 'ocorrencias:professor_update' p.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'ocorrencias:professor_delete' p.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-secondary py-4">Nenhum professor cadastrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body">
+        {% include 'ocorrencias/cadastros/_paginacao.html' %}
+    </div>
+</div>
+{% endblock %}

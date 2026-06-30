@@ -1,0 +1,40 @@
+{% extends 'ocorrencias/base_app.html' %}
+
+{% block titulo_pagina %}Horários{% endblock %}
+{% block cabecalho_pagina %}<i class="bi bi-clock"></i> Horários{% endblock %}
+
+{% block conteudo_pagina %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="Pesquisar pela aula..." value="{{ termo_busca }}" style="min-width: 280px;">
+            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i></button>
+        </form>
+        <a href="{% url 'ocorrencias:horario_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> Novo Horário</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light"><tr><th>Dia da Semana</th><th>Aula</th><th>Início</th><th>Fim</th><th class="text-end">Ações</th></tr></thead>
+            <tbody>
+                {% for h in objetos %}
+                <tr>
+                    <td>{{ h.get_dia_semana_display }}</td>
+                    <td>{{ h.aula }}</td>
+                    <td>{{ h.horario_inicio|time:"H:i" }}</td>
+                    <td>{{ h.horario_fim|time:"H:i" }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'ocorrencias:horario_update' h.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'ocorrencias:horario_delete' h.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-secondary py-4">Nenhum horário cadastrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body">
+        {% include 'ocorrencias/cadastros/_paginacao.html' %}
+    </div>
+</div>
+{% endblock %}

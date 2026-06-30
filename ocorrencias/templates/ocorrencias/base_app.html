@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load ocorrencias_extras %}
+
+{% block title %}{% block titulo_pagina %}Ocorrências Escolares{% endblock %} · IFAM{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+    body { background-color: #f4f6f9; }
+    .sidebar {
+        min-height: 100vh;
+        background: #1e2a38;
+        color: #fff;
+    }
+    .sidebar a {
+        color: #c7d0db;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        padding: .65rem 1rem;
+        border-radius: .4rem;
+        margin: 0 .5rem .15rem .5rem;
+    }
+    .sidebar a:hover, .sidebar a.active {
+        background: #2f4156;
+        color: #fff;
+    }
+    .sidebar .sidebar-section {
+        text-transform: uppercase;
+        font-size: .72rem;
+        letter-spacing: .05em;
+        color: #7d8b9a;
+        padding: 1rem 1.1rem .3rem 1.1rem;
+    }
+    .navbar-top {
+        background: #fff;
+        border-bottom: 1px solid #e3e6ea;
+    }
+    .card-indicador .display-6 { font-weight: 700; }
+    @media (max-width: 991.98px) {
+        .sidebar { min-height: auto; }
+    }
+</style>
+
+<div class="d-flex flex-column flex-lg-row">
+
+    <!-- Sidebar -->
+    <nav class="sidebar p-2 p-lg-3" style="width: 260px;">
+        <div class="d-flex align-items-center gap-2 px-2 py-3 mb-2">
+            <img src="{% static 'ifam_humaita_logo_inicio.png' %}" alt="IFAM" style="height: 38px;" class="bg-white rounded p-1">
+            <div>
+                <div class="fw-bold text-white" style="font-size: .95rem;">Ocorrências</div>
+                <div class="text-secondary" style="font-size: .72rem;">IFAM Campus Humaitá</div>
+            </div>
+        </div>
+
+        <a href="{% url 'ocorrencias:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a href="{% url 'ocorrencias:ocorrencia_list' %}" class="{% if 'ocorrencia' in request.resolver_match.url_name and 'tipo' not in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-journal-text"></i> Ocorrências
+        </a>
+        <a href="{% url 'ocorrencias:relatorio' %}" class="{% if 'relatorio' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-bar-chart-line"></i> Relatórios
+        </a>
+
+        {% if user.is_superuser or user|in_group:"Administrador" %}
+        <div class="sidebar-section">Administração</div>
+        <a href="{% url 'ocorrencias:professor_list' %}" class="{% if 'professor' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-person-workspace"></i> Professores
+        </a>
+        <a href="{% url 'ocorrencias:aluno_list' %}" class="{% if 'aluno' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-mortarboard"></i> Alunos
+        </a>
+        <a href="{% url 'ocorrencias:turma_list' %}" class="{% if 'turma' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-people"></i> Turmas
+        </a>
+        <a href="{% url 'ocorrencias:curso_list' %}" class="{% if 'curso' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-book"></i> Cursos / Áreas
+        </a>
+        <a href="{% url 'ocorrencias:tipo_list' %}" class="{% if 'tipo' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-flag"></i> Tipos de Ocorrência
+        </a>
+        <a href="{% url 'ocorrencias:horario_list' %}" class="{% if 'horario' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-clock"></i> Horários
+        </a>
+
+        <div class="sidebar-section">Configurações</div>
+        <a href="{% url 'ocorrencias:usuario_list' %}" class="{% if 'usuario' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-person-gear"></i> Usuários
+        </a>
+        <a href="/admin/" target="_blank">
+            <i class="bi bi-box-arrow-up-right"></i> Django Admin
+        </a>
+        {% endif %}
+    </nav>
+
+    <!-- Conteúdo -->
+    <div class="flex-fill">
+        <nav class="navbar navbar-top px-3 py-2 d-flex justify-content-between">
+            <span class="h5 mb-0">{% block cabecalho_pagina %}{% endblock %}</span>
+
+            {% if user.is_authenticated %}
+            <div class="dropdown">
+                <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle fs-5"></i>
+                    <span>{{ user.get_full_name|default:user.username }}</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><span class="dropdown-item-text text-secondary small">
+                        {% if user.is_superuser %}Administrador{% else %}{{ user.perfil_ocorrencias.get_perfil_display|default:"Usuário" }}{% endif %}
+                    </span></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form method="post" action="{% url 'ocorrencias:logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item text-danger">
+                                <i class="bi bi-box-arrow-right"></i> Sair
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
+        </nav>
+
+        <div class="p-3 p-lg-4">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block conteudo_pagina %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}

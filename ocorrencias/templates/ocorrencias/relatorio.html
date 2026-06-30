@@ -1,0 +1,87 @@
+{% extends 'ocorrencias/base_app.html' %}
+
+{% block titulo_pagina %}Relatórios{% endblock %}
+{% block cabecalho_pagina %}<i class="bi bi-bar-chart-line"></i> Relatórios de Ocorrências{% endblock %}
+
+{% block conteudo_pagina %}
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-header bg-white"><i class="bi bi-funnel"></i> Filtros</div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            {% for field in form %}
+            <div class="col-md-3">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+            </div>
+            {% endfor %}
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Pesquisar</button>
+                <a href="{% url 'ocorrencias:relatorio' %}" class="btn btn-outline-secondary">Limpar filtros</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span>{{ paginator.count }} ocorrência(s) encontrada(s)</span>
+        <div class="btn-group">
+            <a class="btn btn-sm btn-outline-success" href="{% url 'ocorrencias:relatorio_csv' %}?{{ query_sem_page }}"><i class="bi bi-filetype-csv"></i> CSV</a>
+            <a class="btn btn-sm btn-outline-success" href="{% url 'ocorrencias:relatorio_excel' %}?{{ query_sem_page }}"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            <a class="btn btn-sm btn-outline-danger" href="{% url 'ocorrencias:relatorio_pdf' %}?{{ query_sem_page }}"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'ocorrencias:relatorio_imprimir' %}?{{ query_sem_page }}" target="_blank"><i class="bi bi-printer"></i> Imprimir</a>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th><a class="text-dark text-decoration-none" href="?{{ query_sem_page }}&ordenar={% if ordenar_atual == 'data' %}-data{% else %}data{% endif %}">Data <i class="bi bi-arrow-down-up"></i></a></th>
+                    <th>Hora</th>
+                    <th><a class="text-dark text-decoration-none" href="?{{ query_sem_page }}&ordenar={% if ordenar_atual == 'professor' %}-professor{% else %}professor{% endif %}">Professor</a></th>
+                    <th><a class="text-dark text-decoration-none" href="?{{ query_sem_page }}&ordenar={% if ordenar_atual == 'aluno' %}-aluno{% else %}aluno{% endif %}">Aluno</a></th>
+                    <th>Matrícula</th>
+                    <th>Turma</th>
+                    <th>Curso</th>
+                    <th>Tipo</th>
+                    <th>Usuário</th>
+                    <th><a class="text-dark text-decoration-none" href="?{{ query_sem_page }}&ordenar={% if ordenar_atual == 'status' %}-status{% else %}status{% endif %}">Status</a></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in objetos %}
+                <tr>
+                    <td>{{ o.data|date:"d/m/Y" }}</td>
+                    <td>{{ o.hora|time:"H:i" }}</td>
+                    <td>{{ o.professor.nome }}</td>
+                    <td>{{ o.aluno.nome }}</td>
+                    <td>{{ o.aluno.matricula }}</td>
+                    <td>{{ o.aluno.turma.nome }}</td>
+                    <td>{{ o.aluno.curso.nome }}</td>
+                    <td><span class="badge bg-{{ o.cor_nivel }}">{{ o.tipo.descricao }}</span></td>
+                    <td>{{ o.usuario.get_full_name|default:o.usuario.username }}</td>
+                    <td><span class="badge bg-{{ o.cor_status }}">{{ o.get_status_display }}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="10" class="text-center text-secondary py-4">Nenhum registro encontrado para os filtros informados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body">
+        {% if is_paginated %}
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?{{ query_sem_page }}&page={{ page_obj.previous_page_number }}">Anterior</a></li>
+                {% else %}<li class="page-item disabled"><span class="page-link">Anterior</span></li>{% endif %}
+                <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?{{ query_sem_page }}&page={{ page_obj.next_page_number }}">Próxima</a></li>
+                {% else %}<li class="page-item disabled"><span class="page-link">Próxima</span></li>{% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

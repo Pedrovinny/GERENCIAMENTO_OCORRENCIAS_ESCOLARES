@@ -1,0 +1,89 @@
+{% extends 'ocorrencias/base_app.html' %}
+{% load ocorrencias_extras %}
+
+{% block titulo_pagina %}Ocorrência #{{ ocorrencia.pk }}{% endblock %}
+{% block cabecalho_pagina %}<i class="bi bi-journal-text"></i> Ocorrência #{{ ocorrencia.pk }}{% endblock %}
+
+{% block conteudo_pagina %}
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span>Detalhes</span>
+                <div>
+                    <span class="badge bg-{{ ocorrencia.cor_nivel }}">{{ ocorrencia.tipo.descricao }}</span>
+                    <span class="badge bg-{{ ocorrencia.cor_status }}">{{ ocorrencia.get_status_display }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Aluno</dt>
+                    <dd class="col-sm-9">{{ ocorrencia.aluno.nome }} ({{ ocorrencia.aluno.matricula }})</dd>
+
+                    <dt class="col-sm-3">Turma / Curso</dt>
+                    <dd class="col-sm-9">{{ ocorrencia.aluno.turma }} — {{ ocorrencia.aluno.curso }}</dd>
+
+                    <dt class="col-sm-3">Professor</dt>
+                    <dd class="col-sm-9">{{ ocorrencia.professor.nome }} (SIAPE {{ ocorrencia.professor.siape }})</dd>
+
+                    <dt class="col-sm-3">Horário</dt>
+                    <dd class="col-sm-9">{% if ocorrencia.horario %}{{ ocorrencia.horario }}{% else %}—{% endif %}</dd>
+
+                    <dt class="col-sm-3">Data / Hora</dt>
+                    <dd class="col-sm-9">{{ ocorrencia.data|date:"d/m/Y" }} às {{ ocorrencia.hora|time:"H:i" }}</dd>
+
+                    <dt class="col-sm-3">Usuário responsável</dt>
+                    <dd class="col-sm-9">{{ ocorrencia.usuario.get_full_name|default:ocorrencia.usuario.username }}</dd>
+
+                    <dt class="col-sm-3">Descrição</dt>
+                    <dd class="col-sm-9">{{ ocorrencia.descricao|linebreaksbr }}</dd>
+
+                    {% if ocorrencia.observacoes %}
+                    <dt class="col-sm-3">Observações</dt>
+                    <dd class="col-sm-9">{{ ocorrencia.observacoes|linebreaksbr }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+            <div class="card-footer bg-white text-secondary small">
+                Criado em {{ ocorrencia.criado_em|date:"d/m/Y H:i" }}
+                {% if ocorrencia.criado_por %}por {{ ocorrencia.criado_por.get_full_name|default:ocorrencia.criado_por.username }}{% endif %}
+                {% if ocorrencia.atualizado_em != ocorrencia.criado_em %}
+                · Última atualização em {{ ocorrencia.atualizado_em|date:"d/m/Y H:i" }}
+                {% if ocorrencia.atualizado_por %}por {{ ocorrencia.atualizado_por.get_full_name|default:ocorrencia.atualizado_por.username }}{% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-header bg-white"><i class="bi bi-paperclip"></i> Anexos</div>
+            <div class="card-body">
+                {% if ocorrencia.anexos.all %}
+                <ul class="list-group list-group-flush">
+                    {% for anexo in ocorrencia.anexos.all %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <a href="{{ anexo.arquivo.url }}" target="_blank">
+                            <i class="bi bi-{% if anexo.is_imagem %}image{% else %}file-earmark-pdf{% endif %}"></i>
+                            {{ anexo.arquivo.name|slice:"-30:" }}
+                        </a>
+                        <a href="{% url 'ocorrencias:anexo_delete' anexo.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-secondary mb-0">Nenhum anexo enviado.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-grid gap-2">
+            <a href="{% url 'ocorrencias:ocorrencia_update' ocorrencia.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> Editar</a>
+            {% if user.is_superuser or user|in_group:"Administrador" %}
+            <a href="{% url 'ocorrencias:ocorrencia_delete' ocorrencia.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Excluir</a>
+            {% endif %}
+            <a href="{% url 'ocorrencias:ocorrencia_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Voltar à lista</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
