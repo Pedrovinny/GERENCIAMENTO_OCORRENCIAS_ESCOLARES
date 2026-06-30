@@ -1,0 +1,2 @@
+# GERENCIAMENTO_OCORRENCIAS_ESCOLARES
+Gerenciamento de Ocorrencias Escolares
