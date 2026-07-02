@@ -48,6 +48,7 @@ Sistema web desenvolvido com **Django 5** para registro, acompanhamento e geraç
 | Frontend | Bootstrap 5.3 · Bootstrap Icons 1.11 |
 | Exportação | openpyxl 3.1 (Excel) · ReportLab 5.0 (PDF) |
 | Imagens | Pillow 12.2 |
+| Produção | Gunicorn 23.0 · WhiteNoise 6.9 |
 
 ---
 
@@ -119,11 +120,13 @@ Acesse em: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 GERENCIAMENTO_OCORRENCIAS_ESCOLARES/
 ├── manage.py
 ├── requirements.txt
+├── deploy.sh                    # Script de atualização do servidor de produção (não versionado)
 │
-├── dados/                       # Banco SQLite (db.sqlite3)
+├── dados/                       # Banco SQLite (db.sqlite3), fora do controle de versão
 │
 ├── teste/                       # Configuração principal do Django
-│   ├── settings.py
+│   ├── settings.py              # Configurações base (desenvolvimento)
+│   ├── settings_production.py   # Overrides para produção (DEBUG=False, ALLOWED_HOSTS, WhiteNoise)
 │   ├── urls.py
 │   └── wsgi.py
 │
@@ -196,18 +199,39 @@ Os grupos e permissões são criados automaticamente pelo comando `setup_grupos`
 
 ---
 
-## Configurações de Produção
+## Deploy em Produção
 
-Antes de implantar em produção, altere as seguintes configurações em `teste/settings.py`:
+O sistema está implantado em um VPS (`187.127.41.188`), com a seguinte stack:
 
-1. **`DEBUG = False`**
-2. **`SECRET_KEY`**: utilize uma variável de ambiente
-3. **`ALLOWED_HOSTS`**: adicione o domínio do servidor
-4. Substitua o SQLite por um banco de dados mais robusto (PostgreSQL recomendado)
-5. Configure o servidor de arquivos estáticos e de mídia
+- **Gunicorn** rodando como serviço systemd (`ocorrencias.service`), em `/var/www/ocorrencias`, escutando em um socket Unix
+- **Nginx** como proxy reverso, servindo `staticfiles/` e `media/` diretamente e repassando o restante para o Gunicorn
+- **`teste/settings_production.py`**: estende `settings.py` com `DEBUG = False`, `ALLOWED_HOSTS` do servidor e `SECRET_KEY` lida da variável de ambiente `DJANGO_SECRET_KEY` (definida em `/etc/ocorrencias.env`)
+- Banco SQLite em `dados/db.sqlite3` no servidor (mesma estrutura do ambiente local)
+
+### Atualizando o servidor
+
+Após dar `git push` para `main`, rode o script `deploy.sh` (local, não versionado — contém o caminho do projeto e o nome do serviço no servidor):
+
+```bash
+./deploy.sh
+```
+
+Ele conecta via SSH, faz `git pull`, roda `migrate` e `collectstatic`, e reinicia o serviço `ocorrencias`. Um backup do `db.sqlite3` é criado automaticamente antes de cada migração.
 
 ---
 
 ## Licença
 
 Este projeto foi desenvolvido para uso interno no **IFAM Campus Humaitá**.
+
+---
+
+## Ideias de Automação (BotCity)
+
+Propostas de automação com [BotCity](https://botcity.dev/) para reduzir trabalho manual em torno do sistema:
+
+### 1. Envio automático de relatórios periódicos
+Bot que loga no sistema, acessa `/relatorio/` com os filtros desejados (período, curso, etc.), baixa o relatório em PDF/Excel via `/relatorio/pdf/` ou `/relatorio/excel/` e envia por e-mail ou WhatsApp para a coordenação, em uma rotina agendada (semanal/mensal).
+
+### 2. Sincronização de Alunos e Professores com o SIGAA
+Bot que consulta o SIGAA para extrair dados de discentes e docentes (nome, matrícula/SIAPE, turma/curso) e alimenta os cadastros do sistema automaticamente, evitando digitação manual. Abordagem sugerida: o bot extrai os dados do SIGAA e gera um arquivo, que é importado por um management command Django (bulk insert/update), em vez de preencher os formulários de cadastro um a um pela interface.
