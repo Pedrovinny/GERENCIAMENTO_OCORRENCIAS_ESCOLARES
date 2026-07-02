@@ -119,7 +119,8 @@ Acesse em: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 GERENCIAMENTO_OCORRENCIAS_ESCOLARES/
 ├── manage.py
 ├── requirements.txt
-├── db.sqlite3
+│
+├── dados/                       # Banco SQLite (db.sqlite3)
 │
 ├── teste/                       # Configuração principal do Django
 │   ├── settings.py
