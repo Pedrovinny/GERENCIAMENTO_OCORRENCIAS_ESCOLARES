@@ -10,10 +10,13 @@ from pathlib import Path
 LOG_DIR = Path(__file__).resolve().parent / "logs"
 
 
-def configurar_logger() -> logging.Logger:
+def configurar_logger(
+    nome: str = "automacao.panorama_diario",
+    arquivo_log: str = "panorama_diario.log",
+) -> logging.Logger:
     LOG_DIR.mkdir(exist_ok=True)
 
-    logger = logging.getLogger("automacao.panorama_diario")
+    logger = logging.getLogger(nome)
     if logger.handlers:
         return logger
 
@@ -21,7 +24,7 @@ def configurar_logger() -> logging.Logger:
     formato = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
 
     arquivo = logging.handlers.TimedRotatingFileHandler(
-        LOG_DIR / "panorama_diario.log", when="midnight", backupCount=30, encoding="utf-8"
+        LOG_DIR / arquivo_log, when="midnight", backupCount=30, encoding="utf-8"
     )
     arquivo.setFormatter(formato)
     logger.addHandler(arquivo)

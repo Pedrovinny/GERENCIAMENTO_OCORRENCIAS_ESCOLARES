@@ -1,4 +1,13 @@
-# Automação — Panorama Diário de Ocorrências por E-mail
+# Automação — Robôs de E-mail (BotCity, local)
+
+Dois robôs, ambos usando **BotCity Framework** (edição local/gratuita,
+`botcity-framework-core`), **sem** BotCity Maestro/nuvem:
+
+1. **Panorama diário** (`bot.py`) — roda uma vez por dia, resumo do dia inteiro.
+2. **Alerta de ocorrência grave** (`alerta_grave.py`) — roda a cada 15-30 min,
+   avisa em tempo real sobre ocorrências GRAVES ainda em aberto.
+
+## 1. Panorama Diário de Ocorrências
 
 Robô que roda **uma vez por dia** e envia, por e-mail, o panorama completo das
 ocorrências registradas no dia para os destinatários cadastrados no painel
@@ -36,9 +45,13 @@ automacao/
 
 ## Configuração
 
-1. Instale as dependências (no ambiente virtual do projeto):
+1. Instale as dependências (no ambiente virtual do projeto). Use
+   `automacao\requirements.txt`, não o `requirements.txt` da raiz — este
+   último é o que vai para o servidor Linux (deploy web) e **não** inclui o
+   BotCity, já que ele traz pacotes exclusivos do Windows
+   (`pywin32`/`pywinauto`):
    ```
-   venv\Scripts\pip install -r requirements.txt
+   venv\Scripts\pip install -r automacao\requirements.txt
    ```
 2. Copie `automacao\.env.example` para `automacao\.env` e preencha com as
    credenciais da **Mailtrap Send API** (Sending Domains → seu domínio →
@@ -91,3 +104,58 @@ atual, o robô registra um aviso e encerra normalmente — isso não é uma falh
   aprovado.
 - **"Nenhum destinatário ativo configurado"** — não é erro; verifique se
   algum destinatário tem o dia da semana atual marcado e está "Ativo".
+
+## 2. Alerta de Ocorrência Grave em Tempo Real
+
+Robô que roda **periodicamente** (recomendado: a cada 15-30 min) e verifica se
+existe alguma ocorrência de gravidade **Grave** com status **Aberta**. Se houver,
+envia um e-mail (com a lista de todas as pendentes) para todos os destinatários
+com `ativo=True` em "Destinatários de Relatório" — **diferente do panorama
+diário, o alerta ignora os checkboxes de dia da semana**, porque é urgente e
+não deve esperar o dia "certo" de alguém.
+
+Usa o mesmo mecanismo de envio (Mailtrap Send API) e as mesmas credenciais
+já configuradas em `automacao/.env` — não precisa configurar nada além do que
+já foi feito para o panorama diário.
+
+### Como evita alertas duplicados
+
+Cada `Ocorrencia` tem um campo `alerta_grave_enviado_em` (null até ser
+alertada). O robô só considera "pendentes" as ocorrências com esse campo
+vazio, e só marca o campo depois que pelo menos um destinatário recebeu o
+e-mail com sucesso — se o envio falhar para todos, a ocorrência continua
+pendente e entra no lote da próxima execução.
+
+### Execução manual
+
+```
+venv\Scripts\python.exe automacao\alerta_grave.py
+```
+
+Acompanhe em `automacao\logs\alerta_grave.log`. Se não houver ocorrência grave
+pendente, o robô registra isso e encerra normalmente (não é falha).
+
+### Agendamento (Windows Task Scheduler) — repetindo a cada 15-30 min
+
+1. Abra o **Agendador de Tarefas** → **Criar Tarefa Básica**.
+2. Gatilho: **Diariamente**, horário de início (ex.: 07:00).
+3. Na tela de propriedades da tarefa criada, aba **Gatilhos** → editar o
+   gatilho → marque **"Repetir a tarefa a cada"** e escolha `15 minutos` (ou
+   `30 minutos`), com duração **"Indefinidamente"**.
+4. Ação: **Iniciar um programa** → selecione `automacao\run_alerta.bat`.
+5. Em "Iniciar em (opcional)", aponte para a raiz do projeto (a pasta que
+   contém `manage.py`).
+6. Marque **"Executar mesmo que o usuário não esteja conectado"** apenas se a
+   máquina permanecer ligada continuamente; caso contrário, use "Executar
+   somente quando o usuário estiver conectado".
+7. Clique com o botão direito na tarefa → **Executar**, para validar
+   manualmente, e confira `automacao\logs\alerta_grave.log`.
+
+### Testando localmente sem esperar uma ocorrência grave real
+
+Registre uma ocorrência com um `TipoOcorrencia` de nível **Grave** e status
+**Aberta** pela interface web (`/ocorrencias/nova/`), depois rode o robô
+manualmente — ele deve encontrá-la e disparar o e-mail. Depois de marcado
+`alerta_grave_enviado_em`, rodar de novo não reenvia (a menos que você marque
+o status como Aberta novamente numa ocorrência nova ou limpe o campo pelo
+admin do Django, para testar o fluxo de novo).

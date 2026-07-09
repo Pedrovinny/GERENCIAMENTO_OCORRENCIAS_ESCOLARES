@@ -110,6 +110,24 @@ def montar_panorama_do_dia(data) -> dict:
     }
 
 
+def ocorrencias_graves_pendentes_de_alerta():
+    """Ocorrências abertas, de gravidade GRAVE, que ainda não geraram e-mail de alerta.
+
+    Usado pelo robô de alerta em tempo real (`automacao/alerta_grave.py`); o campo
+    `alerta_grave_enviado_em` evita reenviar o alerta a cada execução periódica.
+    """
+    return (
+        Ocorrencia.objects
+        .select_related("aluno", "aluno__turma", "aluno__curso", "professor", "tipo", "usuario")
+        .filter(
+            status=Ocorrencia.Status.ABERTA,
+            tipo__nivel=TipoOcorrencia.Nivel.GRAVE,
+            alerta_grave_enviado_em__isnull=True,
+        )
+        .order_by("data", "hora")
+    )
+
+
 def gerar_pdf_panorama_do_dia(panorama: dict) -> bytes:
     titulo = "Panorama Diário de Ocorrências Escolares"
     subtitulo = (

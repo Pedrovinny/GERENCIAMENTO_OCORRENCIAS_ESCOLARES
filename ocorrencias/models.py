@@ -270,6 +270,11 @@ class Ocorrencia(models.Model):
     criado_em = models.DateTimeField("Criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
 
+    alerta_grave_enviado_em = models.DateTimeField(
+        "Alerta de gravidade enviado em", null=True, blank=True, editable=False,
+        help_text="Preenchido pelo robô de alerta quando o e-mail de ocorrência grave é enviado.",
+    )
+
     class Meta:
         verbose_name = "Ocorrência"
         verbose_name_plural = "Ocorrências"

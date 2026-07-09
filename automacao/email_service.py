@@ -44,8 +44,7 @@ def montar_payload(cfg: ConfiguracaoEmail, destinatario, panorama: dict, pdf_byt
     }
 
 
-def enviar_panorama(cfg: ConfiguracaoEmail, destinatario, panorama: dict, pdf_bytes: bytes) -> None:
-    payload = montar_payload(cfg, destinatario, panorama, pdf_bytes)
+def _enviar_via_api(cfg: ConfiguracaoEmail, destinatario, payload: dict) -> None:
     resposta = requests.post(
         cfg.api_url,
         json=payload,
@@ -61,3 +60,37 @@ def enviar_panorama(cfg: ConfiguracaoEmail, destinatario, panorama: dict, pdf_by
             f"Mailtrap API retornou {resposta.status_code} para {destinatario.email_efetivo}: "
             f"{resposta.text}"
         )
+
+
+def enviar_panorama(cfg: ConfiguracaoEmail, destinatario, panorama: dict, pdf_bytes: bytes) -> None:
+    payload = montar_payload(cfg, destinatario, panorama, pdf_bytes)
+    _enviar_via_api(cfg, destinatario, payload)
+
+
+def montar_corpo_html_alerta(destinatario, ocorrencias) -> str:
+    return render_to_string(
+        "automacao/email_alerta_grave.html",
+        {"destinatario": destinatario, "ocorrencias": ocorrencias},
+    )
+
+
+def montar_payload_alerta(cfg: ConfiguracaoEmail, destinatario, ocorrencias) -> dict:
+    total = len(ocorrencias)
+    plural = "s" if total != 1 else ""
+    texto_simples = (
+        f"{total} ocorrência{plural} grave{plural} em aberto exige{'m' if plural else ''} atenção imediata. "
+        "Veja os detalhes no e-mail em HTML ou acesse o sistema."
+    )
+    return {
+        "from": {"email": cfg.from_email, "name": cfg.from_name},
+        "to": [{"email": destinatario.email_efetivo}],
+        "subject": f"[Alerta] {total} ocorrência(s) grave(s) em aberto",
+        "text": texto_simples,
+        "html": montar_corpo_html_alerta(destinatario, ocorrencias),
+        "category": "Alerta de Ocorrência Grave",
+    }
+
+
+def enviar_alerta_grave(cfg: ConfiguracaoEmail, destinatario, ocorrencias) -> None:
+    payload = montar_payload_alerta(cfg, destinatario, ocorrencias)
+    _enviar_via_api(cfg, destinatario, payload)
