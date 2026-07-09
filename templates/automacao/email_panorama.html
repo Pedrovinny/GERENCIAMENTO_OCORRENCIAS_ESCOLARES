@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+</head>
+<body style="margin:0; padding:0; background-color:#f4f6f9; font-family: Arial, Helvetica, sans-serif; color:#1e2a38;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f9; padding:24px 0;">
+<tr>
+<td align="center">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+    <tr>
+        <td style="background-color:#1e2a38; padding:20px 28px;">
+            <span style="color:#ffffff; font-size:18px; font-weight:bold;">Panorama Diário de Ocorrências</span><br>
+            <span style="color:#c7d0db; font-size:13px;">IFAM Campus Humaitá</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding:24px 28px;">
+            <p style="font-size:15px; margin:0 0 16px 0;">
+                Olá, <strong>{{ destinatario.nome_efetivo }}</strong>.
+            </p>
+            <p style="font-size:14px; margin:0 0 20px 0; color:#3c4858;">
+                Segue o resumo das ocorrências registradas em
+                <strong>{{ panorama.data|date:"d/m/Y" }}</strong>.
+                O panorama completo, com a lista detalhada de cada ocorrência, está no PDF anexado a este e-mail.
+            </p>
+
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                <tr>
+                    <td style="width:25%; text-align:center; padding:10px; background-color:#f4f6f9; border-radius:6px;">
+                        <div style="font-size:22px; font-weight:bold; color:#1e2a38;">{{ panorama.total }}</div>
+                        <div style="font-size:11px; color:#7d8b9a; text-transform:uppercase;">Total</div>
+                    </td>
+                    <td style="width:4%;"></td>
+                    <td style="width:23%; text-align:center; padding:10px; background-color:#fdeceb; border-radius:6px;">
+                        <div style="font-size:22px; font-weight:bold; color:#dc3545;">{{ panorama.graves }}</div>
+                        <div style="font-size:11px; color:#7d8b9a; text-transform:uppercase;">Graves</div>
+                    </td>
+                    <td style="width:4%;"></td>
+                    <td style="width:23%; text-align:center; padding:10px; background-color:#fff8e6; border-radius:6px;">
+                        <div style="font-size:22px; font-weight:bold; color:#e0a800;">{{ panorama.medias }}</div>
+                        <div style="font-size:11px; color:#7d8b9a; text-transform:uppercase;">Médias</div>
+                    </td>
+                    <td style="width:4%;"></td>
+                    <td style="width:23%; text-align:center; padding:10px; background-color:#e8f4fd; border-radius:6px;">
+                        <div style="font-size:22px; font-weight:bold; color:#0d6efd;">{{ panorama.leves }}</div>
+                        <div style="font-size:11px; color:#7d8b9a; text-transform:uppercase;">Leves</div>
+                    </td>
+                </tr>
+            </table>
+
+            {% if panorama.por_curso %}
+            <p style="font-size:13px; font-weight:bold; color:#1e2a38; margin:0 0 6px 0;">Ocorrências por Curso</p>
+            <table role="presentation" width="100%" cellpadding="6" cellspacing="0" style="font-size:13px; margin-bottom:18px; border-collapse:collapse;">
+                {% for item in panorama.por_curso %}
+                <tr style="border-bottom:1px solid #eef0f3;">
+                    <td>{{ item.aluno__curso__nome|default:"Sem curso" }}</td>
+                    <td align="right" style="font-weight:bold;">{{ item.total }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% endif %}
+
+            {% if panorama.por_professor %}
+            <p style="font-size:13px; font-weight:bold; color:#1e2a38; margin:0 0 6px 0;">Ocorrências por Professor</p>
+            <table role="presentation" width="100%" cellpadding="6" cellspacing="0" style="font-size:13px; margin-bottom:8px; border-collapse:collapse;">
+                {% for item in panorama.por_professor %}
+                <tr style="border-bottom:1px solid #eef0f3;">
+                    <td>{{ item.professor__nome }}</td>
+                    <td align="right" style="font-weight:bold;">{{ item.total }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% endif %}
+
+            <p style="font-size:12px; color:#7d8b9a; margin-top:24px;">
+                Este é um e-mail automático do Sistema de Gerenciamento de Ocorrências Escolares.
+                Para ajustar os dias em que você recebe este relatório, acesse o painel de
+                "Destinatários de Relatório" no sistema.
+            </p>
+        </td>
+    </tr>
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>

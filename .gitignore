@@ -182,3 +182,7 @@ cython_debug/
 
 #Ignorar
 deploy.sh
+
+# Automação (robô BotCity) — segredos e logs de execução
+automacao/.env
+automacao/logs/

@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (
-    Aluno, AnexoOcorrencia, Curso, Horario, Ocorrencia,
+    Aluno, AnexoOcorrencia, Curso, DestinatarioRelatorio, Horario, Ocorrencia,
     PerfilUsuario, Professor, TipoOcorrencia, Turma,
 )
 
@@ -66,3 +66,14 @@ class OcorrenciaAdmin(admin.ModelAdmin):
         "usuario", "criado_por", "atualizado_por",
         "criado_em", "atualizado_em", "data", "hora",
     )
+
+
+@admin.register(DestinatarioRelatorio)
+class DestinatarioRelatorioAdmin(admin.ModelAdmin):
+    list_display = (
+        "nome_efetivo", "email_efetivo", "ativo",
+        "recebe_segunda", "recebe_terca", "recebe_quarta",
+        "recebe_quinta", "recebe_sexta", "recebe_sabado", "recebe_domingo",
+    )
+    list_filter = ("ativo",)
+    search_fields = ("nome", "email", "usuario__first_name", "usuario__last_name", "usuario__email")
