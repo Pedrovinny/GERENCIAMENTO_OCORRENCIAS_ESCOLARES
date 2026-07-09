@@ -270,6 +270,11 @@ class Ocorrencia(models.Model):
     criado_em = models.DateTimeField("Criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
 
+    alerta_grave_enviado_em = models.DateTimeField(
+        "Alerta de gravidade enviado em", null=True, blank=True, editable=False,
+        help_text="Preenchido pelo robô de alerta quando o e-mail de ocorrência grave é enviado.",
+    )
+
     class Meta:
         verbose_name = "Ocorrência"
         verbose_name_plural = "Ocorrências"
@@ -321,3 +326,100 @@ class AnexoOcorrencia(models.Model):
     @property
     def is_imagem(self):
         return self.arquivo.name.lower().endswith((".jpg", ".jpeg", ".png"))
+
+
+# ======================================================
+# AUTOMAÇÃO: DESTINATÁRIOS DO RELATÓRIO DIÁRIO POR E-MAIL
+# ======================================================
+
+class DestinatarioRelatorio(models.Model):
+    """Cadastro de quem recebe o panorama diário de ocorrências por e-mail, e em quais dias."""
+
+    WEEKDAY_FIELD_MAP = {
+        0: "recebe_segunda",
+        1: "recebe_terca",
+        2: "recebe_quarta",
+        3: "recebe_quinta",
+        4: "recebe_sexta",
+        5: "recebe_sabado",
+        6: "recebe_domingo",
+    }  # date.weekday(): Segunda=0 ... Domingo=6
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True,
+        related_name="destinatarios_relatorio", verbose_name="Usuário do sistema",
+        help_text="Selecione um usuário já cadastrado, ou deixe em branco e informe nome/e-mail abaixo.",
+    )
+    nome = models.CharField("Nome", max_length=150, blank=True)
+    email = models.EmailField("E-mail", blank=True)
+    ativo = models.BooleanField("Ativo", default=True)
+
+    recebe_segunda = models.BooleanField("Segunda-feira", default=False)
+    recebe_terca = models.BooleanField("Terça-feira", default=False)
+    recebe_quarta = models.BooleanField("Quarta-feira", default=False)
+    recebe_quinta = models.BooleanField("Quinta-feira", default=False)
+    recebe_sexta = models.BooleanField("Sexta-feira", default=False)
+    recebe_sabado = models.BooleanField("Sábado", default=False)
+    recebe_domingo = models.BooleanField("Domingo", default=False)
+
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "Destinatário de Relatório"
+        verbose_name_plural = "Destinatários de Relatório"
+        ordering = ["nome", "email"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["usuario"], condition=models.Q(usuario__isnull=False),
+                name="unico_destinatario_por_usuario",
+            ),
+            models.UniqueConstraint(
+                fields=["email"], condition=models.Q(usuario__isnull=True),
+                name="unico_destinatario_por_email",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(usuario__isnull=False) | ~models.Q(email=""),
+                name="destinatario_requer_usuario_ou_email",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.nome_efetivo} <{self.email_efetivo}>"
+
+    def get_absolute_url(self):
+        return reverse("ocorrencias:destinatario_list")
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if not self.usuario_id and not self.email:
+            raise ValidationError("Informe um usuário do sistema OU um e-mail externo.")
+        if self.usuario_id and (self.nome or self.email):
+            raise ValidationError(
+                "Preencha nome/e-mail OU vincule um usuário do sistema — não os dois."
+            )
+
+    @property
+    def nome_efetivo(self):
+        if self.usuario_id:
+            return self.usuario.get_full_name() or self.usuario.username
+        return self.nome or self.email
+
+    @property
+    def email_efetivo(self):
+        return self.usuario.email if self.usuario_id else self.email
+
+    @property
+    def dias_selecionados(self):
+        rotulos = {
+            "recebe_segunda": "Seg", "recebe_terca": "Ter", "recebe_quarta": "Qua",
+            "recebe_quinta": "Qui", "recebe_sexta": "Sex", "recebe_sabado": "Sáb",
+            "recebe_domingo": "Dom",
+        }
+        return [rotulo for campo, rotulo in rotulos.items() if getattr(self, campo)]
+
+    @classmethod
+    def destinatarios_do_dia(cls, data):
+        """QuerySet de destinatários ativos que devem receber o relatório na `data` informada."""
+        campo = cls.WEEKDAY_FIELD_MAP[data.weekday()]
+        return cls.objects.filter(ativo=True, **{campo: True}).select_related("usuario")

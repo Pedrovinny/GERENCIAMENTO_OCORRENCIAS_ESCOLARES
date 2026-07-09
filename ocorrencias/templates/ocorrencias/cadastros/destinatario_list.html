@@ -1,0 +1,55 @@
+{% extends 'ocorrencias/base_app.html' %}
+
+{% block titulo_pagina %}Destinatários de Relatório{% endblock %}
+{% block cabecalho_pagina %}<i class="bi bi-envelope-paper"></i> Destinatários de Relatório{% endblock %}
+
+{% block conteudo_pagina %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="Pesquisar por nome ou e-mail..." value="{{ termo_busca }}" style="min-width: 280px;">
+            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i></button>
+        </form>
+        <a href="{% url 'ocorrencias:destinatario_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> Novo Destinatário</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr><th>Nome</th><th>E-mail</th><th>Origem</th><th>Dias de envio</th><th>Situação</th><th class="text-end">Ações</th></tr>
+            </thead>
+            <tbody>
+                {% for d in objetos %}
+                <tr>
+                    <td>{{ d.nome_efetivo }}</td>
+                    <td>{{ d.email_efetivo }}</td>
+                    <td>
+                        {% if d.usuario_id %}
+                            <span class="badge bg-info-subtle text-info-emphasis">Usuário do sistema</span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis">Externo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% for dia in d.dias_selecionados %}
+                            <span class="badge bg-primary-subtle text-primary-emphasis me-1">{{ dia }}</span>
+                        {% empty %}
+                            <span class="text-secondary">—</span>
+                        {% endfor %}
+                    </td>
+                    <td><span class="badge bg-{% if d.ativo %}success{% else %}secondary{% endif %}">{% if d.ativo %}Ativo{% else %}Inativo{% endif %}</span></td>
+                    <td class="text-end">
+                        <a href="{% url 'ocorrencias:destinatario_update' d.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'ocorrencias:destinatario_delete' d.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-secondary py-4">Nenhum destinatário cadastrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body">
+        {% include 'ocorrencias/cadastros/_paginacao.html' %}
+    </div>
+</div>
+{% endblock %}

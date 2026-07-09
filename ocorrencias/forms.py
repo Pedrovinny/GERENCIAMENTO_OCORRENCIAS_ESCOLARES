@@ -6,6 +6,7 @@ from .models import (
     Aluno,
     AnexoOcorrencia,
     Curso,
+    DestinatarioRelatorio,
     Horario,
     Ocorrencia,
     PerfilUsuario,
@@ -258,3 +259,45 @@ class FiltroRelatorioForm(BootstrapFormMixin, forms.Form):
         label="Data final", required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
+
+
+# ======================================================
+# AUTOMAÇÃO: DESTINATÁRIOS DO RELATÓRIO DIÁRIO
+# ======================================================
+
+class DestinatarioRelatorioForm(BootstrapFormMixin, forms.ModelForm):
+    DIAS_SEMANA = [
+        "recebe_segunda", "recebe_terca", "recebe_quarta", "recebe_quinta",
+        "recebe_sexta", "recebe_sabado", "recebe_domingo",
+    ]
+
+    class Meta:
+        model = DestinatarioRelatorio
+        fields = [
+            "usuario", "nome", "email", "ativo",
+            "recebe_segunda", "recebe_terca", "recebe_quarta", "recebe_quinta",
+            "recebe_sexta", "recebe_sabado", "recebe_domingo",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["usuario"].required = False
+        self.fields["usuario"].empty_label = "— Destinatário externo (preencher nome/e-mail) —"
+        self.fields["usuario"].queryset = User.objects.filter(is_active=True).order_by("first_name")
+
+    def clean(self):
+        cleaned = super().clean()
+        usuario = cleaned.get("usuario")
+        nome = cleaned.get("nome")
+        email = cleaned.get("email")
+
+        if not usuario and not email:
+            self.add_error("email", "Informe um e-mail ou selecione um usuário do sistema.")
+        if usuario and (nome or email):
+            self.add_error("usuario", "Não combine usuário do sistema com nome/e-mail externos.")
+
+        if not any(cleaned.get(dia) for dia in self.DIAS_SEMANA):
+            raise forms.ValidationError(
+                "Selecione ao menos um dia da semana para o envio do relatório."
+            )
+        return cleaned

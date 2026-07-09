@@ -15,15 +15,16 @@ from django.views.generic import (
 )
 
 from .forms import (
-    AlunoForm, CursoForm, FiltroRelatorioForm,
+    AlunoForm, CursoForm, DestinatarioRelatorioForm, FiltroRelatorioForm,
     HorarioForm, OcorrenciaForm, ProfessorForm, TipoOcorrenciaForm,
     TurmaForm, UsuarioEdicaoForm, UsuarioForm,
 )
 from .models import (
-    Aluno, AnexoOcorrencia, Curso, Horario, Ocorrencia,
+    Aluno, AnexoOcorrencia, Curso, DestinatarioRelatorio, Horario, Ocorrencia,
     Professor, TipoOcorrencia, Turma,
 )
 from .permissions import AdministradorRequiredMixin
+from .relatorios_service import gerar_pdf_relatorio, linhas_ocorrencias
 
 
 # ======================================================
@@ -647,33 +648,11 @@ class RelatorioView(LoginRequiredMixin, ListView):
         return contexto
 
 
-def _linhas_relatorio(qs):
-    cabecalho = [
-        "Data", "Hora", "Professor", "Aluno", "Matrícula",
-        "Turma", "Curso", "Tipo", "Usuário", "Status",
-    ]
-    linhas = [cabecalho]
-    for o in qs:
-        linhas.append([
-            o.data.strftime("%d/%m/%Y"),
-            o.hora.strftime("%H:%M"),
-            o.professor.nome,
-            o.aluno.nome,
-            o.aluno.matricula,
-            o.aluno.turma.nome,
-            o.aluno.curso.nome,
-            o.tipo.descricao,
-            o.usuario.get_full_name() or o.usuario.username,
-            o.get_status_display(),
-        ])
-    return cabecalho, linhas
-
-
 class RelatorioExportarCSVView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         _, qs = _aplicar_filtros_relatorio(request.GET)
         qs = _ordenar(request, qs)
-        _, linhas = _linhas_relatorio(qs)
+        _, linhas = linhas_ocorrencias(qs)
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="relatorio_ocorrencias.csv"'
@@ -690,7 +669,7 @@ class RelatorioExportarExcelView(LoginRequiredMixin, View):
 
         _, qs = _aplicar_filtros_relatorio(request.GET)
         qs = _ordenar(request, qs)
-        cabecalho, linhas = _linhas_relatorio(qs)
+        cabecalho, linhas = linhas_ocorrencias(qs)
 
         wb = Workbook()
         ws = wb.active
@@ -714,46 +693,14 @@ class RelatorioExportarExcelView(LoginRequiredMixin, View):
 
 class RelatorioExportarPDFView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        from reportlab.lib import colors
-        from reportlab.lib.pagesizes import landscape, A4
-        from reportlab.lib.units import cm
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-        from reportlab.lib.styles import getSampleStyleSheet
-
         _, qs = _aplicar_filtros_relatorio(request.GET)
         qs = _ordenar(request, qs)
-        cabecalho, linhas = _linhas_relatorio(qs)
+        _, linhas = linhas_ocorrencias(qs)
 
-        response = HttpResponse(content_type="application/pdf")
+        pdf_bytes = gerar_pdf_relatorio(linhas, "Relatório de Ocorrências Escolares")
+
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = 'attachment; filename="relatorio_ocorrencias.pdf"'
-
-        doc = SimpleDocTemplate(
-            response, pagesize=landscape(A4),
-            leftMargin=1 * cm, rightMargin=1 * cm,
-            topMargin=1 * cm, bottomMargin=1 * cm,
-        )
-        estilos = getSampleStyleSheet()
-        elementos = [
-            Paragraph("Relatório de Ocorrências Escolares", estilos["Title"]),
-            Paragraph(
-                f"Gerado em {timezone.localtime().strftime('%d/%m/%Y %H:%M')} "
-                f"— {len(linhas) - 1} registro(s)",
-                estilos["Normal"],
-            ),
-        ]
-
-        tabela = Table(linhas, repeatRows=1)
-        tabela.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0d6efd")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTSIZE", (0, 0), (-1, -1), 7),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f2f2f2")]),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ]))
-        elementos.append(tabela)
-
-        doc.build(elementos)
         return response
 
 
@@ -769,3 +716,41 @@ class RelatorioImprimirView(LoginRequiredMixin, ListView):
         contexto = super().get_context_data(**kwargs)
         contexto["gerado_em"] = timezone.localtime()
         return contexto
+
+
+# ======================================================
+# AUTOMAÇÃO: DESTINATÁRIOS DO RELATÓRIO DIÁRIO
+# ======================================================
+
+class DestinatarioListView(AdministradorRequiredMixin, CrudListMixin, ListView):
+    model = DestinatarioRelatorio
+    template_name = "ocorrencias/cadastros/destinatario_list.html"
+    context_object_name = "objetos"
+    campos_busca = ["nome", "email", "usuario__first_name", "usuario__last_name", "usuario__email"]
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("usuario")
+
+
+class DestinatarioCreateView(AdministradorRequiredMixin, CrudMensagemMixin, CreateView):
+    model = DestinatarioRelatorio
+    form_class = DestinatarioRelatorioForm
+    template_name = "ocorrencias/cadastros/form_generico.html"
+    success_url = reverse_lazy("ocorrencias:destinatario_list")
+    mensagem_sucesso = "Destinatário cadastrado com sucesso."
+    extra_context = {"titulo": "Novo Destinatário de Relatório", "voltar_url": "ocorrencias:destinatario_list"}
+
+
+class DestinatarioUpdateView(AdministradorRequiredMixin, CrudMensagemMixin, UpdateView):
+    model = DestinatarioRelatorio
+    form_class = DestinatarioRelatorioForm
+    template_name = "ocorrencias/cadastros/form_generico.html"
+    success_url = reverse_lazy("ocorrencias:destinatario_list")
+    mensagem_sucesso = "Destinatário atualizado com sucesso."
+    extra_context = {"titulo": "Editar Destinatário de Relatório", "voltar_url": "ocorrencias:destinatario_list"}
+
+
+class DestinatarioDeleteView(CrudDeleteMixin, DeleteView):
+    model = DestinatarioRelatorio
+    template_name = "ocorrencias/cadastros/confirmar_exclusao.html"
+    success_url = reverse_lazy("ocorrencias:destinatario_list")

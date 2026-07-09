@@ -91,6 +91,9 @@
         <a href="{% url 'ocorrencias:usuario_list' %}" class="{% if 'usuario' in request.resolver_match.url_name %}active{% endif %}">
             <i class="bi bi-person-gear"></i> Usuários
         </a>
+        <a href="{% url 'ocorrencias:destinatario_list' %}" class="{% if 'destinatario' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="bi bi-envelope-paper"></i> Destinatários de Relatório
+        </a>
         <a href="/admin/" target="_blank">
             <i class="bi bi-box-arrow-up-right"></i> Django Admin
         </a>

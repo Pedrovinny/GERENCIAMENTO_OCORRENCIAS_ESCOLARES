@@ -58,6 +58,8 @@ cover/
 # Django stuff:
 *.log
 local_settings.py
+db.sqlite3
+db.sqlite3-journal
 dados/db.sqlite3
 dados/db.sqlite3-journal
 
@@ -182,3 +184,7 @@ cython_debug/
 
 #Ignorar
 deploy.sh
+
+# Automação (robô BotCity) — segredos e logs de execução
+automacao/.env
+automacao/logs/
